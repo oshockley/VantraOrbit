@@ -14,7 +14,7 @@ A realistic, interactive 3D solar system built with Three.js featuring authentic
 
 ## 🚀 Live Demo
 
-Visit the live demo: [Coming Soon - Vercel Deployment]
+Visit the live demo: **[VantraOrbit - Live 3D Solar System](https://vantraorbit-qbr8p3ce6-oneals-projects-f72d9cc2.vercel.app)**
 
 ## 🛠️ Technologies Used
 
