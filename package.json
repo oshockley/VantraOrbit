@@ -1,7 +1,7 @@
 {
-  "name": "solar-system-complex",
+  "name": "vantraorbit",
   "version": "1.0.0",
-  "description": "Interactive 3D Solar System with realistic planets, textures, and orbital mechanics",
+  "description": "VantraOrbit - Interactive 3D Solar System with realistic planets, textures, and orbital mechanics",
   "main": "main.js",
   "scripts": {
     "start": "http-server -p 8000 -c-1",

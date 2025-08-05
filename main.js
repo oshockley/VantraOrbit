@@ -28,7 +28,7 @@ function createWindow() {
             experimentalFeatures: false
         },
         icon: path.join(__dirname, 'res/icon/icon.png'),
-        title: 'Solar System Complex',
+        title: 'VantraOrbit - 3D Solar System',
         show: false, // Don't show until ready
         frame: true,
         titleBarStyle: 'default'
@@ -166,7 +166,7 @@ function createMenu() {
                         const { dialog } = require('electron');
                         dialog.showMessageBox({
                             type: 'info',
-                            title: 'About Solar System Complex',
+                            title: 'About VantraOrbit',
                             message: 'Solar System Complex v1.0.0',
                             detail: 'Interactive 3D Solar System with realistic planets, textures, and orbital mechanics.\n\nBuilt with Three.js and Electron.\n\n© 2025 Your Name'
                         });

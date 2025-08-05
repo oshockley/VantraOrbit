@@ -1,12 +1,12 @@
 {
-  "name": "Solar System Complex",
-  "short_name": "SolarSystem",
-  "description": "Interactive 3D Solar System with realistic planets, textures, and orbital mechanics",
+  "name": "VantraOrbit",
+  "short_name": "VantraOrbit",
+  "description": "VantraOrbit - Interactive 3D Solar System with realistic planets, textures, and orbital mechanics",
   "start_url": "./index.html",
   "display": "fullscreen",
   "orientation": "landscape",
-  "theme_color": "#000000",
-  "background_color": "#000000",
+  "theme_color": "#1a1a2e",
+  "background_color": "#1a1a2e",
   "icons": [
     {
       "src": "res/icon/android/ldpi.png",

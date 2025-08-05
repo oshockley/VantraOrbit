@@ -65,6 +65,11 @@ class SolarSystem {
         this.followTarget = null;
         this.isPaused = false;
         
+        // Progress tracking
+        this.loadingProgress = 0;
+        this.totalAssets = 10; // 8 planets + sun + background
+        this.loadedAssets = 0;
+        
         // Mobile optimizations
         this.isMobile = MobileOptimizations.isMobileDevice();
         this.performanceSettings = window.PERFORMANCE_SETTINGS || {};
@@ -72,6 +77,79 @@ class SolarSystem {
         this.init();
     }
     
+    updateProgress() {
+        this.loadedAssets++;
+        this.loadingProgress = (this.loadedAssets / this.totalAssets) * 100;
+        
+        const progressBar = document.getElementById('progressBar');
+        if (progressBar) {
+            progressBar.style.width = this.loadingProgress + '%';
+        }
+        
+        if (this.loadingProgress >= 100) {
+            setTimeout(() => {
+                this.showWelcomeScreen();
+            }, 500);
+        }
+    }
+    
+    showWelcomeScreen() {
+        const loading = document.getElementById('loading');
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        
+        if (loading) loading.style.display = 'none';
+        if (welcomeScreen) welcomeScreen.style.display = 'flex';
+        
+        // Setup start button
+        const startButton = document.getElementById('startButton');
+        if (startButton) {
+            startButton.addEventListener('click', () => {
+                welcomeScreen.style.display = 'none';
+                this.startExperience();
+            });
+        }
+    }
+    
+    startExperience() {
+        // Show controls and start animation
+        const controls = document.getElementById('controls');
+        if (controls) controls.style.display = 'block';
+        
+        // Add welcome message
+        this.showWelcomeMessage();
+    }
+    
+    showWelcomeMessage() {
+        // Create a temporary welcome message
+        const message = document.createElement('div');
+        message.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(74, 158, 255, 0.9);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 16px;
+            text-align: center;
+            z-index: 2000;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        `;
+        message.innerHTML = '🌌 Welcome to VantraOrbit!<br>Use your mouse to explore the solar system';
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            message.style.opacity = '0';
+            message.style.transition = 'opacity 1s ease';
+            setTimeout(() => {
+                if (message.parentNode) {
+                    message.parentNode.removeChild(message);
+                }
+            }, 1000);
+        }, 3000);
+    }
+
     init() {
         // Setup renderer with enhanced quality settings
         this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -167,11 +245,13 @@ class SolarSystem {
         const tryLoad8K = () => {
             loader.load('textures/stars_milky_way_8k.jpg', (texture) => {
                 console.log('Successfully loaded 8K Milky Way texture');
+                this.updateProgress(); // Update loading progress
                 this.createStarSphere(texture);
             }, undefined, (error) => {
                 console.warn('8K texture failed, trying 2K version:', error);
                 loader.load('textures/stars_milky_way.jpg', (texture) => {
                     console.log('Successfully loaded 2K Milky Way texture');
+                    this.updateProgress(); // Update loading progress
                     this.createStarSphere(texture);
                 }, undefined, (error) => {
                     console.warn('All textures failed, using procedural stars:', error);
@@ -267,6 +347,7 @@ class SolarSystem {
         
         loader.load('textures/sun.jpg', (texture) => {
             console.log('Successfully loaded Sun texture');
+            this.updateProgress(); // Update loading progress
             const sunGeometry = new THREE.SphereGeometry(10, 64, 64);
             
             // Main Sun material with realistic glow
@@ -761,6 +842,7 @@ class SolarSystem {
                 texturePath,
                 (texture) => {
                     console.log(`Successfully loaded texture for ${name}`);
+                    this.updateProgress(); // Update loading progress
                     const material = new THREE.MeshStandardMaterial({ map: texture });
                     const planet = new THREE.Mesh(geometry, material);
                     
