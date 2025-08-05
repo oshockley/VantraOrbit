@@ -1,0 +1,77 @@
+{
+  "name": "solar-system-complex",
+  "version": "1.0.0",
+  "description": "Interactive 3D Solar System with realistic planets, textures, and orbital mechanics",
+  "main": "main.js",
+  "scripts": {
+    "start": "http-server -p 8000 -c-1",
+    "build": "npm run build-web && npm run build-mobile",
+    "build-web": "npm run optimize-assets",
+    "build-mobile": "cordova build",
+    "optimize-assets": "node scripts/optimize-textures.js",
+    "serve": "http-server -p 8000 -c-1",
+    "dev": "http-server -p 8000 -c-1 --cors",
+    "electron": "electron .",
+    "electron-pack": "electron-builder",
+    "cordova-prepare": "cordova prepare",
+    "ios": "cordova run ios",
+    "android": "cordova run android"
+  },
+  "keywords": [
+    "solar-system",
+    "3d",
+    "astronomy",
+    "education",
+    "threejs",
+    "mobile",
+    "ios",
+    "android"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4",
+    "cordova": "^12.0.0"
+  },
+  "dependencies": {
+    "three": "^0.156.1"
+  },
+  "build": {
+    "appId": "com.yourcompany.solarsystem",
+    "productName": "Solar System Complex",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules",
+      "!src",
+      "!scripts"
+    ],
+    "mac": {
+      "category": "public.app-category.education",
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "cordova": {
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "plugins": {
+      "cordova-plugin-device": {},
+      "cordova-plugin-statusbar": {},
+      "cordova-plugin-splashscreen": {},
+      "cordova-plugin-screen-orientation": {},
+      "cordova-plugin-fullscreen": {}
+    }
+  }
+}

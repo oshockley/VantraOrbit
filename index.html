@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <title>Solar System Complex</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="Interactive 3D Solar System with realistic planets, textures, and orbital mechanics">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Solar System">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="res/icon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="res/icon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="res/icon/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+        
+        .ui-controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 280px;
+            z-index: 1000;
+        }
+        
+        .ui-controls h3 {
+            margin: 0 0 10px 0;
+            color: #fff;
+        }
+        
+        .control-group {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-group label {
+            display: inline-block;
+            width: 120px;
+            color: #ddd;
+            font-size: 12px;
+        }
+        
+        input[type="range"] {
+            width: 100px;
+            height: 4px;
+            margin: 0 10px;
+            flex: 1;
+        }
+        
+        input[type="checkbox"] {
+            margin: 0 10px;
+        }
+        
+        select {
+            margin: 0 10px;
+            padding: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            flex: 1;
+        }
+        
+        .planet-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            max-width: 280px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+        
+        .planet-info h3 {
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            z-index: 2000;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .ui-controls, .planet-info {
+                font-size: 12px;
+                padding: 10px;
+                max-width: 250px;
+            }
+            
+            .control-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .control-group label {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            
+            input[type="range"], select {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .ui-controls {
+                left: 5px;
+                top: 5px;
+                max-width: calc(100vw - 20px);
+            }
+            
+            .planet-info {
+                right: 5px;
+                top: 5px;
+                max-width: calc(100vw - 20px);
+            }
+        }
+        
+        /* Hide controls toggle for mobile */
+        .controls-toggle {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 1001;
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .controls-toggle {
+                display: block;
+            }
+        }
+        
+        .controls-hidden .ui-controls,
+        .controls-hidden .planet-info {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        Loading Solar System...
+    </div>
+    
+    <button class="controls-toggle" id="controlsToggle">Toggle Controls</button>
+    
+    <div class="ui-controls" style="display: none;" id="controls">
+        <h3>🚀 Solar System Controls</h3>
+        <div class="control-group">
+            <label>Animation Speed:</label>
+            <input type="range" id="speedSlider" min="0" max="5" step="0.1" value="1">
+            <span id="speedValue">1.0x</span>
+        </div>
+        <div class="control-group">
+            <label>Planet Scale:</label>
+            <input type="range" id="scaleSlider" min="1" max="10" step="0.5" value="3">
+            <span id="scaleValue">3.0x</span>
+        </div>
+        <div class="control-group">
+            <label>Show Orbits:</label>
+            <input type="checkbox" id="showOrbits" checked>
+        </div>
+        <div class="control-group">
+            <label>Follow Planet:</label>
+            <select id="followPlanet">
+                <option value="">None</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="planet-info" style="display: none;" id="planetInfo">
+        <h3 id="planetName">🪐 Planet Name</h3>
+        <p><strong>Distance from Sun:</strong> <span id="planetDistance"></span></p>
+        <p><strong>Orbital Period:</strong> <span id="planetPeriod"></span></p>
+        <p><strong>Diameter:</strong> <span id="planetDiameter"></span></p>
+        <p><strong>Type:</strong> <span id="planetType"></span></p>
+    </div>
+
+    <!-- Three.js Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Cordova Script (for mobile apps only) -->
+    <script>
+        // Only load cordova.js in mobile environments
+        if (window.location.protocol !== 'file:' || navigator.userAgent.includes('Mobile')) {
+            document.write('<script type="text/javascript" src="cordova.js"><\/script>');
+        }
+    </script>
+    
+    <!-- Main Application -->
+    <script src="js/mobile-optimizations.js"></script>
+    <script src="js/solar-system.js"></script>
+    
+    <!-- PWA Service Worker (not for Electron) -->
+    <script>
+        // Only register service worker in web browsers, not Electron
+        if ('serviceWorker' in navigator && typeof process === 'undefined') {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful');
+                }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        } else {
+            console.log('Service Worker not registered - running in Electron');
+        }
+    </script>
+</body>
+</html>
