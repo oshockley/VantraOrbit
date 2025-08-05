@@ -5,10 +5,9 @@
   "main": "main.js",
   "scripts": {
     "start": "http-server -p 8000 -c-1",
-    "build": "npm run build-web && npm run build-mobile",
-    "build-web": "npm run optimize-assets",
+    "build": "echo 'Static site - no build needed'",
+    "build-web": "echo 'Static site - no build needed'",
     "build-mobile": "cordova build",
-    "optimize-assets": "node scripts/optimize-textures.js",
     "serve": "http-server -p 8000 -c-1",
     "dev": "http-server -p 8000 -c-1 --cors",
     "electron": "electron .",
