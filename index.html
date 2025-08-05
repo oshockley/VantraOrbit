@@ -367,6 +367,31 @@
             100% { transform: rotate(360deg); }
         }
         
+        /* Audio Controls Styling */
+        .audio-btn {
+            background: linear-gradient(45deg, #4a9eff, #74b9ff);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(74, 158, 255, 0.3);
+            margin-right: 10px;
+        }
+        
+        .audio-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 158, 255, 0.4);
+            background: linear-gradient(45deg, #74b9ff, #4a9eff);
+        }
+        
+        .audio-btn:active {
+            transform: translateY(0);
+        }
+        
         /* Mobile Optimizations */
         @media (max-width: 768px) {
             .ui-controls, .planet-info {
@@ -496,6 +521,10 @@
             <input type="checkbox" id="showOrbits" checked>
         </div>
         <div class="control-group">
+            <label>🚀 Show Spaceships:</label>
+            <input type="checkbox" id="showSpaceships" checked>
+        </div>
+        <div class="control-group">
             <label>Follow Planet:</label>
             <select id="followPlanet">
                 <option value="">None</option>
@@ -524,7 +553,9 @@
     </script>
     
     <!-- Main Application -->
+    <script src="audio/planetary-audio.js"></script>
     <script src="js/mobile-optimizations.js"></script>
+    <script src="js/spaceship-system.js"></script>
     <script src="js/solar-system.js"></script>
     
     <!-- PWA Service Worker (not for Electron) -->

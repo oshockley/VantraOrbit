@@ -19,6 +19,11 @@ class SolarSystem {
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 50000);
         
+        // Initialize audio system
+        this.audioSystem = new PlanetaryAudioSystem();
+        this.audioEnabled = false;
+        this.currentPlanet = null; // Track currently selected planet for transitions
+        
         // Try WebGL first, fall back to Canvas if it fails
         try {
             this.renderer = new THREE.WebGLRenderer({ 
@@ -59,6 +64,8 @@ class SolarSystem {
         
         this.planets = [];
         this.orbitPaths = [];
+        this.saturnRings = [];
+        this.spaceshipSystem = null; // Will initialize after scene setup
         this.animationSpeed = 1.0;
         this.planetScale = 3.0;
         this.showOrbits = true;
@@ -111,9 +118,15 @@ class SolarSystem {
     }
     
     startExperience() {
+        // Initialize audio system
+        this.initializeAudio();
+        
         // Show controls and start animation
         const controls = document.getElementById('controls');
         if (controls) controls.style.display = 'block';
+        
+        // Setup audio controls
+        this.setupAudioControls();
         
         // Add welcome message
         this.showWelcomeMessage();
@@ -136,7 +149,11 @@ class SolarSystem {
             z-index: 2000;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         `;
-        message.innerHTML = '🌌 Welcome to VantraOrbit!<br>Use your mouse to explore the solar system';
+        message.innerHTML = `
+            🌌 Welcome to VantraOrbit!<br>
+            🖱️ Use your mouse to explore the solar system<br>
+            🔊 Enable audio for planetary sounds!
+        `;
         document.body.appendChild(message);
         
         setTimeout(() => {
@@ -147,7 +164,97 @@ class SolarSystem {
                     message.parentNode.removeChild(message);
                 }
             }, 1000);
-        }, 3000);
+        }, 5000);
+    }
+
+    // Initialize spaceship system
+    initializeSpaceships() {
+        console.log('Attempting to initialize spaceship system...');
+        if (typeof SpaceshipSystem !== 'undefined') {
+            this.spaceshipSystem = new SpaceshipSystem(this.scene);
+            console.log('Spaceship system initialized with 3 exploration vessels');
+            console.log('Spaceships created:', this.spaceshipSystem.spaceships.length);
+        } else {
+            console.warn('SpaceshipSystem not loaded');
+        }
+    }
+
+    // Initialize audio system
+    async initializeAudio() {
+        try {
+            const success = await this.audioSystem.initialize();
+            if (success) {
+                console.log('Planetary audio system ready');
+                this.audioEnabled = true;
+            } else {
+                console.warn('Audio system failed to initialize');
+                this.audioEnabled = false;
+            }
+        } catch (error) {
+            console.error('Audio initialization error:', error);
+            this.audioEnabled = false;
+        }
+    }
+
+    // Setup audio controls in the UI
+    setupAudioControls() {
+        const controlsContainer = document.getElementById('controls');
+        if (!controlsContainer) return;
+
+        // Create audio control section
+        const audioSection = document.createElement('div');
+        audioSection.className = 'control-group';
+        audioSection.innerHTML = `
+            <label>🔊 Planetary Audio:</label>
+            <button id="audioToggle" class="audio-btn">🔇 Enable Sound</button>
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="0.3" style="width: 80px; margin-left: 10px;" disabled>
+        `;
+        
+        // Insert audio controls after the first control group
+        const firstControlGroup = controlsContainer.querySelector('.control-group');
+        if (firstControlGroup) {
+            firstControlGroup.insertAdjacentElement('afterend', audioSection);
+        } else {
+            controlsContainer.appendChild(audioSection);
+        }
+
+        // Setup audio toggle button
+        const audioToggle = document.getElementById('audioToggle');
+        const volumeSlider = document.getElementById('volumeSlider');
+        
+        audioToggle.addEventListener('click', () => {
+            if (!this.audioEnabled) {
+                // First time setup - require user interaction
+                this.initializeAudio().then(() => {
+                    if (this.audioEnabled) {
+                        this.audioSystem.startAudio();
+                        this.audioSystem.createSpaceAmbience();
+                        audioToggle.textContent = '🔊 Disable Sound';
+                        volumeSlider.disabled = false;
+                    }
+                });
+            } else {
+                // Toggle audio on/off
+                const isPlaying = this.audioSystem.toggleAudio();
+                audioToggle.textContent = isPlaying ? '🔊 Disable Sound' : '🔇 Enable Sound';
+                volumeSlider.disabled = !isPlaying;
+            }
+        });
+
+        // Setup volume control
+        volumeSlider.addEventListener('input', (e) => {
+            if (this.audioEnabled) {
+                this.audioSystem.setMasterVolume(parseFloat(e.target.value));
+            }
+        });
+    }
+
+    // Check if a planet is currently visible in the camera view
+    isPlanetVisible(planet) {
+        // Simple visibility check based on distance from camera
+        const distance = this.camera.position.distanceTo(planet.position);
+        const maxVisibleDistance = 1000; // Adjust based on your scene scale
+        return distance < maxVisibleDistance;
     }
 
     init() {
@@ -189,6 +296,9 @@ class SolarSystem {
         
         // Add Earth's Moon
         this.createMoon();
+        
+        // Initialize spaceship system
+        this.initializeSpaceships();
         
         // Setup UI controls
         this.setupUI();
@@ -1129,13 +1239,47 @@ class SolarSystem {
             this.orbitPaths.forEach(orbit => {
                 orbit.visible = this.showOrbits;
             });
+            // Also update spaceship orbit visibility
+            if (this.spaceshipSystem) {
+                this.spaceshipSystem.setOrbitVisibility(this.showOrbits);
+            }
         });
+        
+        // Spaceship visibility
+        const showSpaceshipsCheckbox = document.getElementById('showSpaceships');
+        if (showSpaceshipsCheckbox) {
+            showSpaceshipsCheckbox.addEventListener('change', (e) => {
+                const visible = e.target.checked;
+                if (this.spaceshipSystem) {
+                    this.spaceshipSystem.spaceships.forEach(spaceship => {
+                        spaceship.visible = visible;
+                    });
+                    this.spaceshipSystem.setOrbitVisibility(visible && this.showOrbits);
+                }
+            });
+        }
         
         // Follow planet
         const followSelect = document.getElementById('followPlanet');
         followSelect.addEventListener('change', (e) => {
             const planetName = e.target.value;
-            this.followTarget = planetName ? this.planets.find(p => p.userData.name === planetName) : null;
+            const newTarget = planetName ? this.planets.find(p => p.userData.name === planetName) : null;
+            
+            // Play transition sound if switching between planets
+            if (this.audioEnabled && this.audioSystem) {
+                const fromPlanet = this.currentPlanet ? this.currentPlanet.userData.name.toLowerCase() : null;
+                const toPlanet = newTarget ? newTarget.userData.name.toLowerCase() : null;
+                
+                if (fromPlanet && toPlanet && fromPlanet !== toPlanet) {
+                    this.audioSystem.playPlanetTransition(fromPlanet, toPlanet);
+                } else if (!fromPlanet && toPlanet) {
+                    // First time selecting a planet
+                    this.audioSystem.playSwooshTransition();
+                }
+            }
+            
+            this.followTarget = newTarget;
+            this.currentPlanet = newTarget;
         });
         
         // Planet clicking for info
@@ -1147,11 +1291,50 @@ class SolarSystem {
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             
             raycaster.setFromCamera(mouse, this.camera);
-            const intersects = raycaster.intersectObjects(this.planets);
             
-            if (intersects.length > 0) {
-                const planet = intersects[0].object;
+            // Check for planet intersections first
+            const planetIntersects = raycaster.intersectObjects(this.planets);
+            
+            if (planetIntersects.length > 0) {
+                const planet = planetIntersects[0].object;
+                
+                // Play transition sound if clicking on a different planet
+                if (this.audioEnabled && this.audioSystem) {
+                    const fromPlanet = this.currentPlanet ? this.currentPlanet.userData.name.toLowerCase() : null;
+                    const toPlanet = planet.userData.name.toLowerCase();
+                    
+                    if (fromPlanet && fromPlanet !== toPlanet) {
+                        this.audioSystem.playPlanetTransition(fromPlanet, toPlanet);
+                    } else if (!fromPlanet) {
+                        // First time clicking a planet
+                        this.audioSystem.playSwooshTransition();
+                    }
+                }
+                
                 this.showPlanetInfo(planet);
+                this.currentPlanet = planet;
+            } else if (this.spaceshipSystem) {
+                // Check for spaceship intersections
+                const allSpaceshipObjects = [];
+                this.spaceshipSystem.spaceships.forEach(spaceship => {
+                    spaceship.traverse(child => {
+                        if (child.isMesh) allSpaceshipObjects.push(child);
+                    });
+                });
+                
+                const spaceshipIntersects = raycaster.intersectObjects(allSpaceshipObjects);
+                if (spaceshipIntersects.length > 0) {
+                    const spaceshipPart = spaceshipIntersects[0].object;
+                    const spaceship = spaceshipPart.parent; // Get the main spaceship group
+                    
+                    // Play swoosh sound for spaceship selection
+                    if (this.audioEnabled && this.audioSystem) {
+                        this.audioSystem.playSwooshTransition();
+                    }
+                    
+                    this.showSpaceshipInfo(spaceship);
+                    this.spaceshipSystem.highlightSpaceship(spaceship);
+                }
             }
         });
     }
@@ -1163,6 +1346,23 @@ class SolarSystem {
         document.getElementById('planetPeriod').textContent = data.period || 'Unknown';
         document.getElementById('planetDiameter').textContent = data.diameter || 'Unknown';
         document.getElementById('planetType').textContent = data.type || 'Unknown';
+        
+        // Play audio highlight effect when planet is clicked
+        if (this.audioEnabled && this.audioSystem && data.name !== 'Moon') {
+            const planetName = data.name.toLowerCase();
+            this.audioSystem.playPlanetHighlight(planetName);
+        }
+    }
+    
+    showSpaceshipInfo(spaceship) {
+        if (!this.spaceshipSystem) return;
+        
+        const info = this.spaceshipSystem.getSpaceshipInfo(spaceship);
+        document.getElementById('planetName').textContent = `🚀 ${info.name}`;
+        document.getElementById('planetDistance').textContent = info.orbitRadius;
+        document.getElementById('planetPeriod').textContent = info.speed;
+        document.getElementById('planetDiameter').textContent = info.type;
+        document.getElementById('planetType').textContent = info.mission;
     }
     
     animate() {
@@ -1193,6 +1393,14 @@ class SolarSystem {
             
             // Rotation on axis
             planet.rotation.y += data.rotationSpeed * this.animationSpeed;
+            
+            // Update planetary audio based on rotation speed and visibility
+            if (this.audioEnabled && this.audioSystem && data.name !== 'Moon') {
+                const rotationSpeed = Math.abs(data.rotationSpeed * this.animationSpeed);
+                const isVisible = this.isPlanetVisible(planet);
+                const planetName = data.name.toLowerCase();
+                this.audioSystem.updatePlanetRotation(planetName, rotationSpeed, isVisible);
+            }
             
             // Special handling for Saturn - rotate rings independently
             if (data.name === 'Saturn' && this.saturnRings) {
@@ -1257,6 +1465,11 @@ class SolarSystem {
             }
         }
         
+        // Update spaceships
+        if (this.spaceshipSystem) {
+            this.spaceshipSystem.update(this.animationSpeed);
+        }
+        
         // Subtle starfield rotation for immersive effect
         if (this.starSphere) {
             this.starSphere.rotation.y += 0.0001 * this.animationSpeed;
@@ -1296,8 +1509,23 @@ class SolarSystem {
             
             if (intersects.length > 0) {
                 const planet = intersects[0].object;
+                
+                // Play transition sound if tapping on a different planet
+                if (this.audioEnabled && this.audioSystem) {
+                    const fromPlanet = this.currentPlanet ? this.currentPlanet.userData.name.toLowerCase() : null;
+                    const toPlanet = planet.userData.name.toLowerCase();
+                    
+                    if (fromPlanet && fromPlanet !== toPlanet) {
+                        this.audioSystem.playPlanetTransition(fromPlanet, toPlanet);
+                    } else if (!fromPlanet) {
+                        // First time tapping a planet
+                        this.audioSystem.playSwooshTransition();
+                    }
+                }
+                
                 this.showPlanetInfo(planet);
                 this.followTarget = planet;
+                this.currentPlanet = planet;
             }
         });
         
